@@ -1,5 +1,34 @@
 import { Schema, model, models } from "mongoose";
-
+import {
+  AutoPaginatable,
+  OrganizationMembership,
+  User,
+  WorkOS,
+} from "@workos-inc/node";
+import mongoose from "mongoose";
+export type jobModel = {
+  _id: string;
+  Jobtitle: string;
+  remote: string;
+  type: string;
+  salary: string;
+  country: string;
+  state: string;
+  city: string;
+  countryId: string;
+  stateId: string;
+  cityId: string;
+  jobIcon: string;
+  UserPhoto: string;
+  userName: string;
+  orgId: string;
+  userphoneNumber: string;
+  useremail: string;
+  orgName?: string;
+  isAdmin?: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 const JobSchema = new Schema(
   {
     Jobtitle: { type: "String", required: true },
@@ -15,6 +44,7 @@ const JobSchema = new Schema(
     jobIcon: { type: String },
     UserPhoto: { type: String },
     userName: { type: String, required: true },
+    orgId: { type: String, required: true },
     userphoneNumber: { type: String, required: true },
     useremail: { type: String, required: true },
   },
@@ -22,6 +52,27 @@ const JobSchema = new Schema(
     timestamps: true,
   }
 );
+export async function addOrgAndUserData(
+  jobsDocs: jobModel[],
+  user: User | null
+) {
+  jobsDocs = JSON.parse(JSON.stringify(jobsDocs));
+  await mongoose.connect(process.env.MONGO_URI as string);
+  const workos = new WorkOS(process.env.WORKOS_API_KEY);
+  let oms: AutoPaginatable<OrganizationMembership> | null = null;
+  if (user) {
+    oms = await workos.userManagement.listOrganizationMemberships({
+      userId: user?.id,
+    });
+  }
+  for (const job of jobsDocs) {
+    const org = await workos.organizations.getOrganization(job.orgId);
+    job.orgName = org.name;
+    if (oms && oms.data.length > 0) {
+      job.isAdmin = !!oms.data.find((om) => om.organizationId === job.orgId);
+    }
+  }
+  return jobsDocs;
+}
 
-const Job = models.Job || model("Job", JobSchema);
-export default Job;
+export const Job = models.Job || model("Job", JobSchema);
