@@ -22,188 +22,229 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ImageUpload from "./ImageUpload";
 import axios from "axios";
+import { redirect, useRouter } from "next/navigation";
+import { jobModel } from "../../../server/models/jobModel";
+import { saveJobAction } from "../actions/editJob";
 
-import { useRouter } from "next/navigation";
-const JobForm = ({ orgId }: { orgId: string }) => {
-  // alert(JSON.stringify(orgId));
+const JobForm = ({ orgId, jobdoc }: { orgId: string; jobdoc?: jobModel }) => {
   const router = useRouter();
-  const [countryid, setCountryid] = useState(0);
-  const [stateid, setstateid] = useState(0);
-  const [cityid, setcityid] = useState(0);
-  const [country, setCountry] = useState("");
-  const [state, setstate] = useState("");
-  const [city, setcity] = useState("");
-  const [loading, setLoading] = useState(false); // For loading state
-  const [error, setError] = useState<string | null>(null); // For error message
+  const [countryid, setCountryid] = useState<number>(
+    parseInt(jobdoc?.countryid || "") || 0
+  );
+  const [stateid, setstateid] = useState<number>(
+    parseInt(jobdoc?.stateid || "") || 0
+  );
+  const [cityid, setcityid] = useState<number>(
+    parseInt(jobdoc?.cityid || "") || 0
+  );
 
+  const [country, setCountry] = useState<string>(jobdoc?.country || "");
+  const [state, setstate] = useState<string>(jobdoc?.state || "");
+  const [city, setcity] = useState<string>(jobdoc?.city || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const jobIconFile = formData.get("jobIcon");
-    const userPhotoFile = formData.get("UserPhoto");
 
-    // Check if files are attached
-    if (!jobIconFile || !userPhotoFile) {
-      alert("Please upload both job icon and user photo.");
-      return;
-    }
-
-    formData.set("countryId", countryid.toString());
-    formData.set("stateId", stateid.toString());
-    formData.set("cityId", cityid.toString());
+    // Add location fields
+    formData.set("countryid", countryid.toString());
+    formData.set("stateid", stateid.toString());
+    formData.set("cityid", cityid.toString());
     formData.set("country", country);
     formData.set("state", state);
     formData.set("city", city);
     formData.set("orgId", orgId);
 
+    // Extract ID if exists (to detect update vs create)
+    const id = formData.get("id");
+
     try {
       setLoading(true);
-      const response = await axios.post("/api/createJob", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
 
-      // alert("Job created successfully!");
-      // alert(JSON.stringify(response.data.orgId));
+      if (id) {
+        // 🔄 Update existing job
+        const updatedDoc = await saveJobAction(formData);
+        router.push(`/jobs/${updatedDoc?.orgId}`);
+      } else {
+        // 🆕 Create new job via API (usually used when uploading files)
+        const response = await axios.post("/api/createJob", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
-      // Using `router.push` to navigate to the dynamic page
-      router.push(`/jobs/${response.data.orgId}`);
-
-      setLoading(false);
+        router.push(`/jobs/${response.data.orgId}`);
+      }
     } catch (error: any) {
+      console.error("Error saving job:", error);
+      setError("Something went wrong.");
+    } finally {
       setLoading(false);
-      console.error(
-        "Error submitting form:",
-        error?.response?.data || error.message
-      );
-      setError(error?.response?.data?.error || "Something went wrong.");
     }
   };
 
   return (
-    <div className="container mx-auto">
-      <Theme>
-        <form onSubmit={handleSave}>
-          <TextField.Root
-            name="Jobtitle"
-            placeholder="Job Title"
-            className="mb-7"
-            required
-          />
-          <div className="grid sm:grid-cols-3 gap-6 *:grow mb-7">
-            <div>
-              Remote ?
-              <RadioGroup.Root defaultValue="hybrid" name="remote">
-                <RadioGroup.Item value="on-site">on-site</RadioGroup.Item>
-                <RadioGroup.Item value="hybrid">Hybrid</RadioGroup.Item>
-                <RadioGroup.Item value="fully">Fully-Remote</RadioGroup.Item>
-              </RadioGroup.Root>
+    <>
+      <div className="container mx-auto">
+        {/* {JSON.stringify(jobdoc)} */}
+        <Theme>
+          <form onSubmit={handleSave}>
+            {jobdoc && <input type="hidden" name="id" value={jobdoc?._id} />}
+            <TextField.Root
+              name="Jobtitle"
+              placeholder="Job Title"
+              className="mb-7"
+              defaultValue={jobdoc?.Jobtitle}
+              required
+            />
+            <div className="grid sm:grid-cols-3 gap-6 *:grow mb-7">
+              <div>
+                Remote ?
+                <RadioGroup.Root
+                  defaultValue={jobdoc?.remote || "hybrid"}
+                  name="remote"
+                >
+                  <RadioGroup.Item value="on-site">on-site</RadioGroup.Item>
+                  <RadioGroup.Item value="hybrid">Hybrid</RadioGroup.Item>
+                  <RadioGroup.Item value="fully">Fully-Remote</RadioGroup.Item>
+                </RadioGroup.Root>
+              </div>
+              <div>
+                Full Time ?
+                <RadioGroup.Root
+                  defaultValue={jobdoc?.type || "part-time"}
+                  name="type"
+                >
+                  <RadioGroup.Item value="project">Project</RadioGroup.Item>
+                  <RadioGroup.Item value="part-time">Part-time</RadioGroup.Item>
+                  <RadioGroup.Item value="full-time">Full-time</RadioGroup.Item>
+                </RadioGroup.Root>
+              </div>
+              <div className="content-center">
+                Salary
+                <TextField.Root
+                  name="salary"
+                  defaultValue={jobdoc?.salary}
+                  required
+                >
+                  <TextField.Slot>$</TextField.Slot>
+                  <TextField.Slot>k/year</TextField.Slot>
+                </TextField.Root>
+              </div>
             </div>
-            <div>
-              Full Time ?
-              <RadioGroup.Root defaultValue="part-time" name="type">
-                <RadioGroup.Item value="project">Project</RadioGroup.Item>
-                <RadioGroup.Item value="part-time">Part-time</RadioGroup.Item>
-                <RadioGroup.Item value="full-time">Full-time</RadioGroup.Item>
-              </RadioGroup.Root>
-            </div>
-            <div className="content-center">
-              Salary
-              <TextField.Root name="salary" required>
-                <TextField.Slot>$</TextField.Slot>
-                <TextField.Slot>k/year</TextField.Slot>
-              </TextField.Root>
-            </div>
-          </div>
-          <div className="mb-7">
-            Location
-            <div className="flex flex-col sm:flex-row gap-4 *:grow">
-              <CountrySelect
-                onChange={(e: any) => {
-                  setCountryid(e.id);
-                  setCountry(e.name);
-                }}
-                placeHolder="Select Country"
-              />
 
-              <StateSelect
-                countryid={countryid}
-                onChange={(e: any) => {
-                  setstateid(e.id);
-                  setstate(e.name);
-                }}
-                placeHolder="Select State"
-              />
+            <div className="mb-7">
+              Location
+              <div className="flex flex-col sm:flex-row gap-4 *:grow">
+                <CountrySelect
+                  defaultValue={
+                    countryid ? { id: countryid, name: country } : 0
+                  }
+                  onChange={(e: any) => {
+                    setCountryid(e.id);
+                    setCountry(e.name);
+                  }}
+                  placeHolder="Select Country"
+                />
 
-              <CitySelect
-                countryid={countryid}
-                stateid={stateid}
-                onChange={(e: any) => {
-                  setcityid(e.id);
-                  setcity(e.name);
-                }}
-                placeHolder="Select City"
-              />
+                <StateSelect
+                  defaultValue={stateid ? { id: stateid, name: state } : 0}
+                  countryid={countryid}
+                  onChange={(e: any) => {
+                    setstateid(e.id);
+                    setstate(e.name);
+                  }}
+                  placeHolder="Select State"
+                />
+
+                <CitySelect
+                  defaultValue={cityid ? { id: cityid, name: city } : 0}
+                  countryid={countryid}
+                  stateid={stateid}
+                  onChange={(e: any) => {
+                    setcityid(e.id);
+                    setcity(e.name);
+                  }}
+                  placeHolder="Select City"
+                />
+              </div>
             </div>
-          </div>
-          <div className="sm:flex mb-7">
-            <div className="w-1/3">
-              <h3>Job icon</h3>
-              <ImageUpload name="jobIcon" icon={faStar} />
-            </div>
-            <div className="grow">
-              <h3>Contact person</h3>
-              <div className="flex gap-2">
-                <ImageUpload name="UserPhoto" icon={faUser} />
-                <div className="grow flex flex-col gap-1">
-                  <TextField.Root placeholder="XYZ" name="userName" required>
-                    <TextField.Slot>
-                      <FontAwesomeIcon icon={faUser} />
-                    </TextField.Slot>
-                  </TextField.Root>
-                  <TextField.Root
-                    placeholder="Phone"
-                    type="tel"
-                    name="userphoneNumber"
-                    required
-                  >
-                    <TextField.Slot>
-                      <FontAwesomeIcon icon={faPhone} />
-                    </TextField.Slot>
-                  </TextField.Root>
-                  <TextField.Root
-                    placeholder="Email"
-                    type="email"
-                    name="useremail"
-                    required
-                  >
-                    <TextField.Slot>
-                      <FontAwesomeIcon icon={faEnvelope} />
-                    </TextField.Slot>
-                  </TextField.Root>
+
+            <div className="sm:flex mb-7">
+              <div className="w-1/3">
+                <h3>Job icon</h3>
+                <ImageUpload
+                  name="jobIcon"
+                  icon={faStar}
+                  defaultValue={jobdoc?.jobIcon || ""}
+                />
+              </div>
+              <div className="grow">
+                <h3>Contact person</h3>
+                <div className="flex gap-2">
+                  <ImageUpload
+                    name="UserPhoto"
+                    defaultValue={jobdoc?.UserPhoto || ""}
+                    icon={faUser}
+                  />
+                  <div className="grow flex flex-col gap-1">
+                    <TextField.Root
+                      placeholder="XYZ"
+                      name="userName"
+                      defaultValue={jobdoc?.userName || ""}
+                      required
+                    >
+                      <TextField.Slot>
+                        <FontAwesomeIcon icon={faUser} />
+                      </TextField.Slot>
+                    </TextField.Root>
+                    <TextField.Root
+                      placeholder="Phone"
+                      type="tel"
+                      name="userphoneNumber"
+                      defaultValue={jobdoc?.userphoneNumber || ""}
+                      required
+                    >
+                      <TextField.Slot>
+                        <FontAwesomeIcon icon={faPhone} />
+                      </TextField.Slot>
+                    </TextField.Root>
+                    <TextField.Root
+                      placeholder="Email"
+                      type="email"
+                      name="useremail"
+                      defaultValue={jobdoc?.useremail || ""}
+                      required
+                    >
+                      <TextField.Slot>
+                        <FontAwesomeIcon icon={faEnvelope} />
+                      </TextField.Slot>
+                    </TextField.Root>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <TextArea
-            placeholder="Job description"
-            name="description"
-            resize="vertical"
-            required
-          />
-          {error && <p className="text-red-500 mt-3">{error}</p>}{" "}
-          {/* Show error message */}
-          <div className="mt-3 flex justify-center">
-            <Button type="submit" disabled={loading}>
-              <span className="px-8">{loading ? "Saving..." : "Save"}</span>
-            </Button>
-          </div>
-        </form>
-      </Theme>
-    </div>
+
+            <TextArea
+              placeholder="Job description"
+              name="description"
+              resize="vertical"
+              defaultValue={jobdoc?.description || ""}
+              required
+            />
+
+            {error && <p className="text-red-500 mt-3">{error}</p>}
+
+            <div className="mt-3 flex justify-center">
+              <Button type="submit" disabled={loading}>
+                <span className="px-8">{loading ? "Saving..." : "Save"}</span>
+              </Button>
+            </div>
+          </form>
+        </Theme>
+      </div>
+    </>
   );
 };
 

@@ -5,6 +5,7 @@ import { faHeart } from "@fortawesome/free-solid-svg-icons";
 import { jobModel } from "../../../server/models/jobModel";
 import TimeAgo from "react-timeago";
 import Link from "next/link";
+import axios from "axios";
 const JobRow = ({ jobDoc }: { jobDoc: jobModel }) => {
   // alert(JSON.stringify(jobDoc));
   return (
@@ -18,19 +19,31 @@ const JobRow = ({ jobDoc }: { jobDoc: jobModel }) => {
       </div>
       <div className="grow">
         <div className="text-gray-700 text-sm capitalize">{jobDoc.orgName}</div>
-        <div className="font-bold text-lg">{jobDoc.Jobtitle}</div>
+        <div className="font-bold text-lg">
+          <Link href={"/showJob/" + jobDoc._id} className="hover:underline">
+            {" "}
+            {jobDoc.Jobtitle}
+          </Link>
+        </div>
         <div className="text-gray-400 text-sm capitalize">
           {jobDoc.remote} &middot; {jobDoc.city}, {jobDoc.country} &middot;
           {jobDoc.type} &middot;
           {jobDoc.isAdmin && (
             <>
-              <Link href={"/jobs/edit/" + jobDoc._id}>Edit</Link> &middot;{" "}
+              <Link
+                href={"/jobs/edit/" + jobDoc._id}
+                className="hover:underline"
+              >
+                Edit
+              </Link>{" "}
+              &middot;{" "}
               <button
                 type="button"
-                // onClick={async () => {
-                //   await axios.delete("/api/jobs?id=" + jobDoc._id);
-                //   window.location.reload();
-                // }}
+                className="hover:underline"
+                onClick={async () => {
+                  await axios.delete("/api/deleteJob?id=" + jobDoc._id);
+                  window.location.reload();
+                }}
               >
                 Delete
               </button>

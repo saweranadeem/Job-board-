@@ -15,9 +15,9 @@ export type jobModel = {
   country: string;
   state: string;
   city: string;
-  countryId: string;
-  stateId: string;
-  cityId: string;
+  countryid: string;
+  stateid: string;
+  cityid: string;
   jobIcon: string;
   UserPhoto: string;
   userName: string;
@@ -28,19 +28,21 @@ export type jobModel = {
   isAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
+  description: string;
 };
 const JobSchema = new Schema(
   {
-    Jobtitle: { type: "String", required: true },
-    remote: { type: "String", required: true },
-    type: { type: "String", required: true },
-    salary: { type: "String", required: true },
+    Jobtitle: { type: String, required: true },
+    description: { type: String, required: true },
+    remote: { type: String, required: true },
+    type: { type: String, required: true },
+    salary: { type: Number, required: true },
     country: { type: String, required: true },
     state: { type: String, required: true },
     city: { type: String, required: true },
-    countryId: { type: String, required: true },
-    stateId: { type: String, required: true },
-    cityId: { type: String, required: true },
+    countryid: { type: String, required: true },
+    stateid: { type: String, required: true },
+    cityid: { type: String, required: true },
     jobIcon: { type: String },
     UserPhoto: { type: String },
     userName: { type: String, required: true },
@@ -52,6 +54,8 @@ const JobSchema = new Schema(
     timestamps: true,
   }
 );
+
+export const Job = models.Job || model("Job", JobSchema);
 export async function addOrgAndUserData(
   jobsDocs: jobModel[],
   user: User | null
@@ -74,5 +78,3 @@ export async function addOrgAndUserData(
   }
   return jobsDocs;
 }
-
-export const Job = models.Job || model("Job", JobSchema);

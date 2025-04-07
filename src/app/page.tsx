@@ -6,20 +6,22 @@ import {
   getSignUpUrl,
   withAuth,
 } from "@workos-inc/authkit-nextjs";
+import mongoose from "mongoose";
+import { Job } from "../../server/models/jobModel";
 
 const Home = async () => {
   const { user } = await withAuth();
-
-  // Get the URL to redirect the user to AuthKit to sign in
   const signInUrl = await getSignInUrl();
-
-  // Get the URL to redirect the user to AuthKit to sign up
   const signUpUrl = await getSignUpUrl();
+
+  // ✅ Connect to DB and fetch jobs
+  await mongoose.connect(process.env.MONGO_URI as string);
+  const jobs = await Job.find().lean();
 
   return (
     <div>
       <Hero />
-      <Jobs />
+      <Jobs header="Latest Jobs" jobs={JSON.parse(JSON.stringify(jobs))} />
     </div>
   );
 };

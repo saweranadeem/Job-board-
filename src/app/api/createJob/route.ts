@@ -63,14 +63,15 @@ export async function POST(req: Request) {
       country: formData.get("country") as string,
       state: formData.get("state") as string,
       city: formData.get("city") as string,
-      countryId: formData.get("countryId") as string,
-      stateId: formData.get("stateId") as string,
-      cityId: formData.get("cityId") as string,
+      countryid: formData.get("countryid") as string,
+      stateid: formData.get("stateid") as string,
+      cityid: formData.get("cityid") as string,
       jobIcon: jobIconUrl, // Save the job icon URL
       UserPhoto: userPhotoUrl, // Save the user photo URL
       userName: formData.get("userName") as string,
       userphoneNumber: formData.get("userphoneNumber") as string,
       useremail: formData.get("useremail") as string,
+      description: formData.get("description") as string,
     };
 
     // Save the job to MongoDB
