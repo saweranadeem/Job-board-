@@ -20,10 +20,9 @@ const JobRow = ({ jobDoc }: { jobDoc: jobModel }) => {
       <div className="grow">
         <div className="text-gray-700 text-sm capitalize">{jobDoc.orgName}</div>
         <div className="font-bold text-lg">
-          <Link href={"/showJob/" + jobDoc._id} className="hover:underline">
-            {" "}
-            {jobDoc.Jobtitle}
-          </Link>
+          {/* <Link href={"/showJob/" + jobDoc._id} className="hover:underline"> */}{" "}
+          {jobDoc.Jobtitle}
+          {/* </Link> */}
         </div>
         <div className="text-gray-400 text-sm capitalize">
           {jobDoc.remote} &middot; {jobDoc.city}, {jobDoc.country} &middot;
